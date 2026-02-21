@@ -91,8 +91,6 @@ async function intervalCheck(printAllItems = false, filteredSoldOut = false) {
     const items = await getCurrentItem(cookieString);
     const updateItems = updateItemAndTrace(items);
     console.clear();
-    console.log(`Updated ${updateItems.length} items.`);
-    console.log(JSON.stringify(updateItems, null, 2));
     if (printAllItems) {
       printResultAsTable(
         filteredSoldOut ? items.filter((item) => item.count > 0) : items,
