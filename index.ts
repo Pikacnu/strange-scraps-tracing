@@ -9,7 +9,6 @@ import { startServer } from './src/web';
 
 const disordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
 const sessionCookie = process.env.SESSION_COOKIE;
-// domain : api.scraps.hackclub.com , path: / , secure, httpOnly
 const cookieString = sessionCookie
   ? `session=${sessionCookie}; Domain=api.scraps.hackclub.com; Path=/; Secure; HttpOnly`
   : '';
@@ -73,7 +72,7 @@ async function sendDiscordNotification(items: Item[]) {
         body: JSON.stringify({
           components: content,
           flags: Math.pow(2, 15),
-        }), // Suppress mentions
+        }),
       });
       if (!res.ok) {
         console.error('Failed to send Discord notification:', res.statusText);
@@ -121,5 +120,5 @@ if (!disordWebhookUrl) {
 setInterval(() => intervalCheck(false, true), 5 * 60 * 1000); // Check every 5 minutes
 intervalCheck(true, true).then(() => {
   console.log(`Server started at http://${hostname}:${port}`);
-}); // Initial check on startup
+});
 startServer(port, hostname);

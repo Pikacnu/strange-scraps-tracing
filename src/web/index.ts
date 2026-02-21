@@ -54,8 +54,6 @@ export function startServer(port: number, hostname: string) {
               'SELECT * FROM traces WHERE itemId = ? ORDER BY APIupdated_at DESC',
             )
             .all(itemId) as TraceSchema[];
-
-          // Convert snake_case DB columns to camelCase to match the items payload
           const traces = tracesRaw.map((t) =>
             Object.fromEntries(
               Object.entries(t).map(([key, value]) => [
