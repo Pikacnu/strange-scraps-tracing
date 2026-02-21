@@ -55,7 +55,7 @@ export function updateItemAndTrace(
       );
       return true;
     }
-    return true;
+    return false;
   });
 }
 
