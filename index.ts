@@ -8,6 +8,7 @@ import {
 import { startServer } from './src/web';
 
 const disordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
 const sessionCookie = process.env.SESSION_COOKIE;
 const cookieString = sessionCookie
   ? `session=${sessionCookie}; Domain=api.scraps.hackclub.com; Path=/; Secure; HttpOnly`
@@ -85,6 +86,68 @@ async function sendDiscordNotification(items: Item[]) {
   }
 }
 
+async function sendSlackNotification(items: Item[]) {
+  const SplitedItems = items.reduce((acc: Item[][], item) => {
+    if (acc.length === 0) {
+      acc.push([item]);
+    } else {
+      const lastGroup = acc[acc.length - 1];
+      if (lastGroup!.length < 20) {
+        lastGroup!.push(item);
+      } else {
+        acc.push([item]);
+      }
+    }
+    return acc;
+  }, []);
+
+  for (const groups of SplitedItems) {
+    const blocks: any[] = [];
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: '*Scraps Content Update*' },
+    });
+
+    for (const item of groups) {
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text:
+            `*${item.name}*\n` +
+            `Effective Roll Cost: ${getEffectiveRollCost(item)}\n` +
+            `Base Probability: ${item.baseProbability}%\n` +
+            `User Boost: ${item.userBoostPercent}%\n` +
+            `Effective Probability: ${item.effectiveProbability}%\n` +
+            `Next Upgrade Cost: ${item.nextUpgradeCost}\n` +
+            `Count: ${item.count}\n`,
+        },
+      });
+    }
+
+    blocks.push({ type: 'divider' });
+
+    try {
+      const res = await fetch(slackWebhookUrl!, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocks }),
+      });
+      if (!res.ok) {
+        console.error('Failed to send Slack notification:', res.statusText);
+        try {
+          const err = await res.text();
+          console.error('Slack API error response:', err);
+        } catch (e) {
+          /* ignore */
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send Slack notification:', error);
+    }
+  }
+}
+
 async function intervalCheck(printAllItems = false, filteredSoldOut = false) {
   try {
     const items = await getCurrentItem(cookieString);
@@ -103,8 +166,13 @@ async function intervalCheck(printAllItems = false, filteredSoldOut = false) {
         (a, b) => getEffectiveRollCost(a) - getEffectiveRollCost(b),
       );
     }
-    if (updateItems.length > 0 && disordWebhookUrl) {
-      await sendDiscordNotification(updateItems);
+    if (updateItems.length > 0 && (disordWebhookUrl || slackWebhookUrl)) {
+      if (disordWebhookUrl) {
+        await sendDiscordNotification(updateItems);
+      }
+      if (slackWebhookUrl) {
+        await sendSlackNotification(updateItems);
+      }
     }
   } catch (error) {
     console.error('Error fetching items or updating traces:', error);
@@ -114,6 +182,12 @@ async function intervalCheck(printAllItems = false, filteredSoldOut = false) {
 if (!disordWebhookUrl) {
   console.error(
     'DISCORD_WEBHOOK_URL environment variable is not set. Discord notifications will be disabled.',
+  );
+}
+
+if (!slackWebhookUrl) {
+  console.info(
+    'SLACK_WEBHOOK_URL environment variable is not set. Slack notifications will be disabled.',
   );
 }
 
