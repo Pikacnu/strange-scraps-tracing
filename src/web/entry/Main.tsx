@@ -41,7 +41,9 @@ export function App() {
   useEffect(() => {
     if (selectedItemId === null) return;
     const fetchTraces = async () => {
-      const res = await fetch(`/api/traces?itemId=${selectedItemId}`);
+      const res = await fetch(
+        `/api/traces?itemId=${items.find((item) => item.id === selectedItemId)?.itemId!}`,
+      );
       const data = await res.json();
       // server returns camelCase fields for traces now
       const sortedTraces = data.traces.sort(
@@ -99,7 +101,7 @@ export function App() {
                   .map((item) => (
                     <option
                       key={item.id}
-                      value={item.itemId}
+                      value={item.id}
                     >
                       {item.name} ({item.count})
                     </option>
@@ -113,7 +115,7 @@ export function App() {
                   .map((item) => (
                     <option
                       key={item.id}
-                      value={item.itemId}
+                      value={item.id}
                     >
                       {item.name}
                     </option>
